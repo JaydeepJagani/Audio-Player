@@ -1,0 +1,168 @@
+<html>
+<head>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+
+<style type="text/css">
+#audioplayer{
+	width: 480px;
+	height: 60px;
+	margin: 50px auto auto auto;
+border: solid;
+}
+
+#pButton{
+    height:60px; 
+    width: 60px;
+    border: none;
+    background-size: 50% 50%;
+    background-repeat: no-repeat;
+    background-position: center;
+    float:left;
+    outline:none;
+}
+
+.play{background: url('http://www.alexkatz.me/codepen/images/play.png') ;}
+.pause{background: url('http://www.alexkatz.me/codepen/images/pause.png') ;}
+
+#timeline{
+	width: 400px;
+	height: 20px;
+	margin-top: 20px;
+	float: left;
+	border-radius: 15px;
+	background: rgba(0,0,0,.3);
+  
+}
+#playhead{
+	width: 0px;
+	height: 18px;
+	margin-top: 1px;
+	background: rgba(0, 0, 0,1);
+
+}
+
+</style>
+</head>
+<body>
+<audio id="music" preload="true">
+  	<source src="http://www.alexkatz.me/codepen/music/interlude.mp3">
+	<source src="http://www.alexkatz.me/codepen/music/interlude.ogg">
+</audio>
+<div id="audioplayer">
+	<button id="pButton" class="play" onclick="play()"></button>
+  <span id="current_time"></span>
+  <div id="timeline">    
+  	<div id="playhead"></div>
+  </div>
+  <span id="end_time"></span>  
+</div>
+<p>
+  <span class="volume_key" onclick="volume_change('20')">1</span>
+  <span class="volume_key" onclick="volume_change('40')">2</span>
+  <span class="volume_key" onclick="volume_change('60')">3</span>
+  <span class="volume_key" onclick="volume_change('80')">4</span>
+  <span class="volume_key" onclick="volume_change('100')">5</span>
+  </p>
+<script type="text/javascript">
+$(document).ready(function(){
+var music = document.getElementById('music'); 
+var duration; // Duration of audio clip
+var pButton = document.getElementById('pButton');
+var playhead = document.getElementById('playhead');
+var timeline = document.getElementById('timeline');
+var timelineWidth = timeline.offsetWidth - playhead.offsetWidth;
+
+// Gets audio file duration
+music.addEventListener("canplaythrough", function () {
+    duration = music.duration;  
+    document.getElementById("end_time").textContent=getTimes(music.duration);
+}, false);
+
+
+music.addEventListener("timeupdate", timeUpdate, false);
+timeline.addEventListener("click", function (event) {
+    moveplayhead(event);
+    music.currentTime = duration * clickPercent(event);
+}, false);
+function clickPercent(e) {
+    return (e.pageX - timeline.offsetLeft) / timelineWidth;
+}
+playhead.addEventListener('mousedown', mouseDown, false);
+window.addEventListener('mouseup', mouseUp, false);
+
+var onplayhead = false;
+function mouseDown() {
+    onplayhead = true;
+    window.addEventListener('mousemove', moveplayhead, true);
+    music.removeEventListener('timeupdate', timeUpdate, false);
+}
+function mouseUp(e) {
+    if (onplayhead == true) {
+        moveplayhead(e);
+        window.removeEventListener('mousemove', moveplayhead, true);
+        // change current time
+        music.currentTime = duration * clickPercent(e);
+        music.addEventListener('timeupdate', timeUpdate, false);
+    }
+    onplayhead = false;
+}
+function moveplayhead(e) {
+    var newMargLeft = e.pageX - timeline.offsetLeft;
+    if (newMargLeft >= 0 && newMargLeft <= timelineWidth) {
+        // playhead.style.marginLeft = newMargLeft + "px";
+        playhead.style.width = newMargLeft + "px";
+    }
+    if (newMargLeft < 0) {
+        // playhead.style.marginLeft = "0px";
+        playhead.style.width = "0px";
+    }
+    if (newMargLeft > timelineWidth) {
+        // playhead.style.marginLeft = timelineWidth + "px";
+        playhead.style.width = timelineWidth + "px";
+    }
+}
+function getTimes(t) {
+    var m=~~(t/60), s=~~(t % 60);
+    return (m<10?"0"+m:m)+':'+(s<10?"0"+s:s);
+}
+function timeUpdate() {
+    var playPercent = timelineWidth * music.currentTime / duration;
+    // playhead.style.marginLeft = playPercent + "px";
+    playhead.style.width = playPercent + "px";
+    var t = music.currentTime;
+    currentTime = getTimes(t);
+    document.getElementById("current_time").textContent = currentTime;
+    var dt = music.duration;
+    durationTime = getTimes(dt);
+    document.getElementById("end_time").textContent=durationTime;
+    if (music.currentTime == duration) {
+        pButton.className = "";
+        pButton.className = "play";
+    }
+}
+
+window.volume_change = function(v){
+    music.volume = v/100;
+}
+//Play and Pause
+// function play() {
+window.play = function(){
+    // start music
+    if (music.paused) {
+        music.play();
+        // remove play, add pause
+        pButton.className = "";
+        pButton.className = "pause";
+    } else { // pause music
+        music.pause();
+        // remove pause, add play
+        pButton.className = "";
+        pButton.className = "play";
+    }
+}
+
+});
+
+</script>
+</body>
+</html>

@@ -1,0 +1,224 @@
+<html>
+<head>
+<link rel="stylesheet" href="http://code.jquery.com/ui/1.10.3/themes/smoothness/jquery-ui.css">
+<script src="http://code.jquery.com/jquery-1.9.1.js"></script>
+<script src="http://code.jquery.com/ui/1.10.3/jquery-ui.js"></script>
+<style type="text/css">
+.ranking-modal-content table td {font-family: 'Proxima Nova Rg'; font-weight:700; vertical-align:top; font-size:15px;}
+.ranking-modal-content table td + td {font-family: 'Proxima Nova'; font-weight:400;}
+.panel-group .panel { border-radius:0px;}
+.node-type-page .body-content-area { padding-top:30px;}
+span.share-button { margin-right:10px;}
+
+
+
+#audioplayer{
+  width: 640px;height: 66px;margin: 0px auto auto auto; background:#000;color:#fff;
+  }
+
+#pButton{ height:66px;   width: 66px;  border: none;  background-size: 40px 40px;  background-repeat: no-repeat;  background-position: center;    float:left;
+    outline:none; margin-left:16px;}
+
+.play{background: url('play-arrow.png') no-repeat ;}
+.pause{background: url('pause-arrow.png') no-repeat ;}
+
+#timeline{
+  width: 350px;
+  height: 13px;
+  margin-top: 25px;
+  float: left;
+  border-radius: 0px;
+  background: #808080;
+  
+}
+#playhead{
+  width: 0px;
+  height: 13px;
+  margin-top: 0px;
+  background: #90000b;
+
+}
+#current_time { float: left; height:66px; line-height:66px; margin-right:18px; font-size:12px; font-family: 'Proxima Nova Rg';; font-weight:700; min-width:33px; margin-left:22px;}
+#end_time { float: left; height:66px; line-height:66px; margin-left:10px; font-size:12px; font-family: 'Proxima Nova Rg';; font-weight:700; min-width:40px;}
+.vol_div { position:relative; float:right; margin-top:23px; margin-right:0px;}
+.music_player .volume {  width:80px; height:18px; padding-left:0px;} 
+
+.music_player .volume span {  width:5px; background:#878787; text-indent:-99999px; height:1px; position:relative; top:13px; float:left; margin-right:3px; display:block; cursor:pointer;}
+.music_player .volume span:after {content: ""; position: absolute; width: 0; height: 0; border-bottom: 3px solid #878787;border-left: 5px solid transparent;
+    display: block; top: -3px;}
+.music_player .volume span + span{ height:5px; top:9px }
+.music_player .volume span + span + span{height:8px; top:6px}
+.music_player .volume span + span + span + span{height:11px; top:3px}
+.music_player .volume span + span + span + span + span {height:14px; top:0px}
+.music_player .volume span.active_volume { background:#fff;}
+.music_player .volume span.active_volume:after {border-bottom: 3px solid #fff}
+
+.music_player .mute_vol.volume span.active_volume { background:#878787;}
+a#vol_img { background:url(volume.png) no-repeat; float:left; width:14px; height:14px; cursor:pointer; margin-right:5px; margin-top:2px;}
+.music_player .mute_vol.volume a#vol_img {background:url(volume-off.png) no-repeat;}
+
+.music_player .mute_vol.volume span:after { border-bottom: 3px solid #878787}
+
+</style>
+</head>
+<body>
+
+<div class="music_player">
+    <audio id="music" preload="true">
+        <source src="http://www.alexkatz.me/codepen/music/interlude.mp3">
+    </audio>
+    <div id="audioplayer">
+      <button id="pButton" class="play" onclick="play()"></button>
+      <span id="current_time">00.00</span>
+      <div id="timeline">    
+        <div id="playhead"></div>
+        <!-- <div id="playhead-bar"></div> -->
+      </div>
+      <span id="end_time"></span>
+      <div class="vol_div">
+        <p class="volume" id="vol_content">
+          <a id="vol_img" class="vol_on"></a>
+          <span class="volume_key active_volume" onclick="volume_change('20')">1</span>
+          <span class="volume_key active_volume" onclick="volume_change('40')">2</span>
+          <span class="volume_key active_volume" onclick="volume_change('60')">3</span>
+          <span class="volume_key active_volume" onclick="volume_change('80')">4</span>
+          <span class="volume_key active_volume" onclick="volume_change('100')">5</span>
+        </p>
+      </div>
+    </div>
+    
+</div> 
+<script type="text/javascript">
+$(document).ready(function(){
+var music = document.getElementById('music'); 
+var duration; // Duration of audio clip
+var pButton = document.getElementById('pButton');
+var playhead = document.getElementById('playhead');
+var timeline = document.getElementById('timeline');
+var timelineWidth = timeline.offsetWidth - playhead.offsetWidth;
+
+// Gets audio file duration
+music.addEventListener("canplaythrough", function () {
+    duration = music.duration;  
+    document.getElementById("end_time").textContent=getTimes(music.duration);
+}, false);
+
+
+music.addEventListener("timeupdate", timeUpdate, false);
+timeline.addEventListener("click", function (event) {
+    moveplayhead(event);
+    music.currentTime = duration * clickPercent(event);
+}, false);
+function clickPercent(e) {
+    return (e.pageX - timeline.offsetLeft) / timelineWidth;
+}
+playhead.addEventListener('mousedown', mouseDown, false);
+window.addEventListener('mouseup', mouseUp, false);
+
+var onplayhead = false;
+function mouseDown() {
+    onplayhead = true;
+    window.addEventListener('mousemove', moveplayhead, true);
+    music.removeEventListener('timeupdate', timeUpdate, false);
+}
+function mouseUp(e) {
+    if (onplayhead == true) {
+        moveplayhead(e);
+        window.removeEventListener('mousemove', moveplayhead, true);
+        // change current time
+        music.currentTime = duration * clickPercent(e);
+        music.addEventListener('timeupdate', timeUpdate, false);
+    }
+    onplayhead = false;
+}
+function moveplayhead(e) {
+    var newMargLeft = e.pageX - timeline.offsetLeft;
+    if (newMargLeft >= 0 && newMargLeft <= timelineWidth) {
+        // playhead.style.marginLeft = newMargLeft + "px";
+        playhead.style.width = newMargLeft + "px";
+    }
+    if (newMargLeft < 0) {
+        // playhead.style.marginLeft = "0px";
+        playhead.style.width = "0px";
+    }
+    if (newMargLeft > timelineWidth) {
+        // playhead.style.marginLeft = timelineWidth + "px";
+        playhead.style.width = timelineWidth + "px";
+    }
+}
+function getTimes(t) {
+    var m=~~(t/60), s=~~(t % 60);
+    return (m<10?"0"+m:m)+':'+(s<10?"0"+s:s);
+}
+function timeUpdate() {
+    var playPercent = timelineWidth * music.currentTime / duration;
+    // playhead.style.marginLeft = playPercent + "px";
+    playhead.style.width = playPercent + "px";
+    var t = music.currentTime;
+    currentTime = getTimes(t);
+    document.getElementById("current_time").textContent = currentTime;
+    var dt = music.duration;
+    durationTime = getTimes(dt);
+    document.getElementById("end_time").textContent=durationTime;
+    if (music.currentTime == duration) {
+        pButton.className = "";
+        pButton.className = "play";
+    }
+}
+
+window.volume_change = function(v){
+    var el = document.getElementById('vol_content');
+    el.className = "";
+    el.className = "volume";
+    if(music.muted == true){
+       music.muted = false;     
+    }
+    music.volume = v/100;
+}
+//Play and Pause
+// function play() {
+window.play = function(){
+    // start music
+    if (music.paused) {
+        music.play();
+        // remove play, add pause
+        pButton.className = "";
+        pButton.className = "pause";
+    } else { // pause music
+        music.pause();
+        // remove pause, add play
+        pButton.className = "";
+        pButton.className = "play";
+    }
+}
+var audio = document.getElementById('background_audio');
+
+document.getElementById('vol_img').addEventListener('click', function (e)
+{
+    var el = document.getElementById('vol_content');
+    e = e || window.event;
+    music.muted = !music.muted;
+    if(hasClass(el, 'mute_vol')){
+        el.className = "";
+        el.className = "volume";
+    }else{
+        el.className = "";
+        el.className = "volume mute_vol";
+    }
+    e.preventDefault();
+}, false);
+
+
+function hasClass(element, cls) {
+    return (' ' + element.className + ' ').indexOf(' ' + cls + ' ') > -1;
+}
+jQuery('span.volume_key').click(function(){
+        jQuery('span.volume_key').removeClass("active_volume"); 
+        jQuery(this).prevAll().addClass("active_volume"); 
+        jQuery(this).addClass("active_volume");
+    });
+});
+
+</script>
+</body>
+</html>
